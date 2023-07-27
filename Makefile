@@ -1,7 +1,7 @@
 CC=clang
 CFLAGS+=-O0 -fno-pie -Wall -Wextra -Werror -Wno-error=unused-parameter
 ASFLAGS=
-LDFLAGS+=-no-pie -fuse-ld=lld
+LDFLAGS+=-no-pie -fuse-ld=lld -lzstd
 
 ifndef FILE
 	FILE=package

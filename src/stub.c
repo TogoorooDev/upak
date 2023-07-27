@@ -16,6 +16,9 @@
 #include <fcntl.h>
 #include <errno.h>
 
+/* External */
+#include <zstd.h>
+
 #define SHMNAME "/exec"
 
 extern uint8_t exec[];
@@ -41,21 +44,26 @@ int checkmemfd(){
 int main(int argc, char **argv, char **envp){
   int memfd = checkmemfd();
   int execfd;
-  // memfd = 0;
+
+  int dsize = ZSTD_getFrameContentSize(exec, exec_size);
+  void *dexec = malloc(dsize);
+
+  ZSTD_decompress(dexec, dsize, exec, exec_size);
   
-  if (memfd){    
-    execfd = memfd_create(SHMNAME, 0);
-    if (execfd == -1){
-      perror("memfd_create");
-      exit(-1);
-    }
-  } else{
-    fprintf(stderr, "memfd_create system call is not available on your version of Linux\n");
+
+  if (!memfd){
+    fprintf(stderr, "memfd_create is not available in your version of Linux\n");
     exit(-1);
   }
   
-  int written = write(execfd, exec, exec_size);
-  if (written != exec_size){
+  execfd = memfd_create(SHMNAME, 0);
+  if (execfd == -1){
+    perror("memfd_create");
+    exit(-1);
+  }
+  
+  int written = write(execfd, dexec, dsize);
+  if (written != dsize){
     perror("write");
     exit(-1);
   }  
