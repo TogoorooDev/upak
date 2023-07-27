@@ -60,12 +60,9 @@ int main(int argc, char **argv, char **envp){
     exit(-1);
   }  
 
-  char* const exec_argv[] = { NULL };
-
   int f = fork();
-
   if (f == 0){
-    fexecve(execfd, exec_argv, envp);
+    fexecve(execfd, argv, envp);
     perror("exec (memfd)");
     exit(-1);
   }

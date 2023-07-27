@@ -1,8 +1,11 @@
 CC=clang
-CFLAGS=-O0 -fno-pie -Wall -Wextra -Werror -Wno-error=unused-parameter
+CFLAGS+=-O0 -fno-pie -Wall -Wextra -Werror -Wno-error=unused-parameter
 ASFLAGS=
-LDFLAGS=-no-pie -fuse-ld=lld
-FILE=package
+LDFLAGS+=-no-pie -fuse-ld=lld
+
+ifndef FILE
+	FILE=package
+endif
 
 
 $(FILE): obj/data.o obj/stub.o
