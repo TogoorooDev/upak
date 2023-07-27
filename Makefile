@@ -3,8 +3,11 @@ CFLAGS+=-O0 -fno-pie -Wall -Wextra -Werror -Wno-error=unused-parameter
 ASFLAGS=
 LDFLAGS+=-no-pie -fuse-ld=lld -lzstd
 
+CFLAGS_H+=-O2 -Wall -Wextra -Werror
+LDFLAGS_H+=-fuse-ld=lld -lxxhash
+
 ifndef FILE
-	FILE=package
+	FILE=upakbin
 endif
 
 
@@ -16,6 +19,9 @@ obj/stub.o: src/stub.c
 
 obj/data.o: src/data.S
 	$(CC) -c $(CFLAGS) $(ASFLAGS) src/data.S -o obj/data.o
+
+hasher: src/hasher.c
+	$(CC) $(CFLAGS_H) $(LDFLAGS_H) src/hasher.c -o hasher
 
 clean:
 	rm -rf obj/* $(FILE)

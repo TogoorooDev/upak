@@ -18,6 +18,7 @@
 
 /* External */
 #include <zstd.h>
+#include <xxhash.h>
 
 #define SHMNAME "/exec"
 
