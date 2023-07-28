@@ -55,7 +55,7 @@ int main(int argc, char** argv){
     die(fi, fo);
   }
 
-  XXH128_hash_t hash = XXH3_128bits(filecontents, buffer.st_size);
+  XXH64_hash_t hash = XXH3_64bits(filecontents, buffer.st_size);
 
   ssize_t wsize = write(fo, &hash, 128);
 

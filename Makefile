@@ -1,5 +1,5 @@
 CC=clang
-CFLAGS+=-O0 -fno-pie -Wall -Wextra -Werror -Wno-error=unused-parameter
+CFLAGS+=-Os -fno-pie -Wall -Wextra -Werror -Wno-error=unused-parameter
 ASFLAGS=
 LDFLAGS+=-no-pie -fuse-ld=lld -lzstd
 
@@ -11,22 +11,26 @@ ifndef FILE
 endif
 
 
-$(FILE): obj/data.o obj/stub.o
+$(FILE): obj obj/data.o obj/stub.o 
 	$(CC) $(LDFLAGS) $(CFLAGS) obj/data.o obj/stub.o -o $(FILE)
+	strip $(FILE)
 
-obj/stub.o: src/stub.c
+obj/stub.o: obj src/stub.c
 	$(CC) -c $(CFLAGS) src/stub.c -o obj/stub.o
 
-obj/data.o: src/data.S
+obj/data.o: obj src/data.S
 	$(CC) -c $(CFLAGS) $(ASFLAGS) src/data.S -o obj/data.o
 
-hasher: src/hasher.c
-	$(CC) $(CFLAGS_H) $(LDFLAGS_H) src/hasher.c -o hasher
+obj:
+	mkdir obj
+	
+hasher: util/hasher.c
+	$(CC) $(CFLAGS_H) $(LDFLAGS_H) $< -o hasher
 
 clean:
-	rm -rf obj/* $(FILE)
+	rm -rf obj/* $(FILE) hasher
 
 genclean:
 	rm -rf obj/*
 
-remake: clean $(FILE)
+remake: clean

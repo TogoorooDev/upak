@@ -1,13 +1,10 @@
 #define _GNU_SOURCE
 
-/* Portable */
+#include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include <string.h>
-#include <stdio.h>
 
-/* Posix-Specific */
-#include <sys/utsname.h>
+// #include <sys/utsname.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
@@ -16,67 +13,84 @@
 #include <fcntl.h>
 #include <errno.h>
 
-/* External */
+#ifdef SECURITY_ENHANCED
+#include <sys/ptrace.h>
+#endif
+
 #include <zstd.h>
-#include <xxhash.h>
 
 #define SHMNAME "/exec"
 
-extern uint8_t exec[];
-extern int exec_size;
+extern uint8_t execz[];
+extern int execz_size;
 
-int checkmemfd(){
-  struct utsname kver;
-  uname(&kver);
 
-  char *token;
-  char *sep = ".";
-
-  token = strtok(kver.release, sep);
-  if (atoi(token) < 3) return 0;
-  else if (atoi(token) > 3) return 1;
-
-  token = strtok(NULL, sep);
-  if (atoi(token) < 17) return 0;
-  else return 1;
-
-}
-
-int main(int argc, char **argv, char **envp){
-  int memfd = checkmemfd();
-  int execfd;
-
-  int dsize = ZSTD_getFrameContentSize(exec, exec_size);
-  void *dexec = malloc(dsize);
-
-  ZSTD_decompress(dexec, dsize, exec, exec_size);
-  
-
-  if (!memfd){
-    fprintf(stderr, "memfd_create is not available in your version of Linux\n");
+void basicmain(int argc, char**argv, char **envp){
+  int exec_size = ZSTD_getFrameContentSize(execz, execz_size);
+  if (ZSTD_isError(exec_size)){
+    if (exec_size == -2){
+      printf("Possibly Uncompressed Data (Did you pack properly?)\n");
+      exit(-1);
+    }
+    printf("ZSTD_getFrameContentSize: %s\n", ZSTD_getErrorName(exec_size));
     exit(-1);
   }
-  
-  execfd = memfd_create(SHMNAME, 0);
+
+  int *exec = malloc(exec_size);
+
+  size_t exec_stat = ZSTD_decompress(exec, exec_size, execz, execz_size);
+  if (ZSTD_isError(exec_stat)){
+    puts(ZSTD_getErrorName(exec_stat));
+    free(exec);
+    exit(-1);
+  }
+
+  int execfd = memfd_create(SHMNAME, 0);
   if (execfd == -1){
     perror("memfd_create");
     exit(-1);
   }
-  
-  int written = write(execfd, dexec, dsize);
-  if (written != dsize){
+
+  int written = write(execfd, exec, exec_size);
+  if (written != exec_size){
     perror("write");
     exit(-1);
-  }  
+  }
 
+  fexecve(execfd, argv, envp);
+  free(exec);
+  close(execfd);
+  perror("exec (memfd)");
+  exit(-1);
+}
+
+#ifdef SECURITY_ENHANCED
+
+void semain(int argc, char **argv, char **envp){
+  puts("Security Enhanced Binary Loading");
+  int p = getpid();
   int f = fork();
   if (f == 0){
-    fexecve(execfd, argv, envp);
-    perror("exec (memfd)");
-    exit(-1);
+    printf("%d\n", getpid());
+    ptrace(PTRACE_TRACEME, NULL, NULL, NULL);
+    ptrace(PTRACE_SEIZE, p, NULL, NULL);
+    basicmain(argc, argv, envp);
   }
-    
-  waitpid(f, NULL, 0);
-
+  wait(NULL);
+  ptrace(PTRACE_SEIZE, f, NULL, NULL);
+  ptrace(PTRACE_CONT, f, NULL, NULL);
+  wait(NULL);
   exit(-1);
+}
+
+#endif
+
+
+int main(int argc, char **argv, char **envp){
+  #ifdef SECURITY_ENHANCED
+  semain(argc, argv, envp);
+  #else
+  basicmain(argc, argv, envp);
+  #endif  
+   
 }

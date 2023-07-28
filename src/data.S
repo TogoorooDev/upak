@@ -1,16 +1,11 @@
-        .global exec
-        .global exec_size
+        .global execz
+        .global execz_size
+
         .section .rodata
 
-cksum:
-        .incbin "obj/executable.tmp.cksum"
-j:
-cksum_size:
-        .int j - cksum
 
-exec:
+execz:
         .incbin "obj/executable.tmp"
 i:
-exec_size:
-        .int i - exec
-
+execz_size:
+        .int i - execz
