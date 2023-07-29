@@ -24,7 +24,6 @@
 extern uint8_t execz[];
 extern int execz_size;
 
-
 void basicmain(int argc, char**argv, char **envp){
   int exec_size = ZSTD_getFrameContentSize(execz, execz_size);
   if (ZSTD_isError(exec_size)){
