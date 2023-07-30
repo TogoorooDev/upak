@@ -1,5 +1,5 @@
 CC=clang
-CFLAGS+=-Os -fno-pie -Wall -Wextra -Werror -Wno-error=unused-parameter
+CFLAGS+=-Os -fno-pie -Wall -Wextra -Werror -Wno-error=unused-parameter -pedantic
 ASFLAGS=
 LDFLAGS+=-no-pie -fuse-ld=lld -lzstd
 

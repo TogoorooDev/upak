@@ -21,10 +21,19 @@
 
 #define SHMNAME "/exec"
 
+#if defined(__LP64__)
+#define ElfW(type) Elf64_ ## type
+#else
+#define ElfW(type) Elf32_ ## type
+#endif
+
 extern uint8_t execz[];
 extern int execz_size;
 
 void basicmain(int argc, char**argv, char **envp){
+
+  #ifndef NO_COMPRESS
+
   int exec_size = ZSTD_getFrameContentSize(execz, execz_size);
   if (ZSTD_isError(exec_size)){
     if (exec_size == -2){
@@ -43,6 +52,13 @@ void basicmain(int argc, char**argv, char **envp){
     free(exec);
     exit(-1);
   }
+
+  #else
+
+  uint8_t *exec = execz;
+  int exec_size = execz_size;
+
+  #endif
 
   int execfd = memfd_create(SHMNAME, 0);
   if (execfd == -1){
@@ -66,11 +82,13 @@ void basicmain(int argc, char**argv, char **envp){
 #ifdef SECURITY_ENHANCED
 
 void semain(int argc, char **argv, char **envp){
-  puts("Security Enhanced Binary Loading");
+  #ifndef QUIET
+    puts("Security Enhanced Binary Loading");
+  #endif
   int p = getpid();
   int f = fork();
   if (f == 0){
-    printf("%d\n", getpid());
+    // printf("%d\n", getpid());
     ptrace(PTRACE_TRACEME, NULL, NULL, NULL);
     ptrace(PTRACE_SEIZE, p, NULL, NULL);
     basicmain(argc, argv, envp);
